@@ -58,11 +58,17 @@ export async function modifyPresentationState(connection:any,event:string,title:
     });
 }
 
-export async function storeEvent(connection:any, event:string, presentationMax:number){
-   return connection.promise().query("INSERT INTO events (event,maxpresentations) VALUES(?,?)",[event,presentationMax])
+export async function storeEvent(connection:any, eventname:string, presentationMax:number){
+   return connection.promise().query("INSERT INTO events (event,maxpresentations,approvedpresentations) VALUES(?,?)",[eventname,presentationMax,0])
 }
 
-export async function mutateEvent(connection:any, event:string,presentationMax:number){
-    return connection.promise().query("UPDATE events SET maxpresentations=? WHERE event=?",[presentationMax,event]);
+export async function getEvent(connection:any,eventname:string){
+    return connection.promise().query("SELECT * FROM events where event=?",[eventname]);
+}
 
+export async function changeMax(connection:any, eventname:string,presentationMax:number){
+    return connection.promise().query("UPDATE events SET maxpresentations=? WHERE event=?",[presentationMax,eventname]);
+}
+export async function incrementApproved(connection:any,eventname:string){
+    return connection.promise().query("UPDATE events SET approvedpresentations = approvedpresentations+1 WHERE event=?",[eventname])
 }
