@@ -9,13 +9,14 @@ import {send} from "./send_approvals.js";
 import {receive_event_created} from "./receive_event_created.js"
 import {receive_event_modify} from "./receive_event_modify.js"
 import {createConnection, QueryError, RowDataPacket} from 'mysql2';
+import CircuitBreaker from "opossum";
 
 import * as dotenv from "dotenv"
 dotenv.config();
 import * as bluebird from "bluebird"
 
 
-// starts the rabbitmq channels
+// starts the rabbitmq channelsinput
 
 
 // Connects to database
@@ -69,8 +70,7 @@ app.patch("/presentation",async (req,res)=>{
             console.log(toBeModified[0]);
             if(toBeModified[0].approvedpresentations < toBeModified[0].maxpresentations){
                 await modifyPresentationState(connection,req.body.event,req.body.title, req.body.newstate);
-                await incrementApproved(connection,req.body.events);
-                const tobesent = await getPresentation(connection,req.body.event,req.body.title);
+                const tobesent = await incrementApproved(connection,req.body.event);
                 send(tobesent[0])
             }else{
                 res.send("this event has had it's maximum number of presentations approved");
