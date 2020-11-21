@@ -17,8 +17,7 @@ import * as bluebird from "bluebird"
 
 // starts the rabbitmq channels
 
-receive_event_modify();
-receive_event_created();
+
 // Connects to database
 const connection = createConnection({
         host: process.env.DB_HOST,
@@ -34,9 +33,10 @@ connection.connect((err)=>{
         }
         console.log('connected as id ' + connection.threadId);
 });
-
+receive_event_modify(connection);
+receive_event_created(connection);
 app.use(express.urlencoded({type:"application/x-www-form-urlencoded"}))
-import {createPresentation,state, getAllPresentations, getPresentation, modifyPresentationState} from "./dbcontroller"
+import {createPresentation,state, getAllPresentations, getPresentation, modifyPresentationState, storeEvent,changeMax,incrementApproved,getEvent} from "./dbcontroller"
 
 // Check the readme for more details on how to use these endpoints.
 
@@ -61,15 +61,25 @@ app.get("/allpresentations",async (req,res)=>{
 
 // This endpoint changes the state of an existing presentation proposal
 app.patch("/presentation",async (req,res)=>{
+
     if(req.body.newstate ==="submitted" || req.body.newstate ==="approved" || req.body.newstate === "not-this-year"){
         const data = await modifyPresentationState(connection,req.body.event,req.body.title,req.body.newstate)
         if(req.body.newstate === "approved"){
-            const tobesent = await getPresentation(connection,req.body.event,req.body.title);
-            send(tobesent[0])
+            const toBeModified = await getEvent(connection,req.body.event)
+            console.log(toBeModified[0]);
+            if(toBeModified[0].approvedpresentations < toBeModified[0].maxpresentations){
+                await modifyPresentationState(connection,req.body.event,req.body.title, req.body.newstate);
+                await incrementApproved(connection,req.body.events);
+                const tobesent = await getPresentation(connection,req.body.event,req.body.title);
+                send(tobesent[0])
+            }else{
+                res.send("this event has had it's maximum number of presentations approved");
+            }
+        }else if(req.body.newstate ==="not-this-year"){
+            res.send("too bad, maybe next year")
         }
-        res.send("success")
     }else{
-        res.send("fail")
+        res.send("invalid argument")
     }
 })
 
