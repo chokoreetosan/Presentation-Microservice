@@ -38,6 +38,7 @@ receive_event_modify(connection);
 receive_event_created(connection);
 app.use(express.urlencoded({type:"application/x-www-form-urlencoded"}))
 import {createPresentation,state, getAllPresentations, getPresentation, modifyPresentationState, storeEvent,changeMax,incrementApproved,getEvent} from "./dbcontroller"
+import { strict } from "assert";
 
 // Check the readme for more details on how to use these endpoints.
 
@@ -66,12 +67,17 @@ app.patch("/presentation",async (req,res)=>{
     if(req.body.newstate ==="submitted" || req.body.newstate ==="approved" || req.body.newstate === "not-this-year"){
         const data = await modifyPresentationState(connection,req.body.event,req.body.title,req.body.newstate)
         if(req.body.newstate === "approved"){
-            const toBeModified = await getEvent(connection,req.body.event)
-            console.log(toBeModified[0]);
-            if(toBeModified[0].approvedpresentations < toBeModified[0].maxpresentations){
+            let toBeModified = await getEvent(connection,req.body.event)
+            console.log("to be modified",toBeModified[0][0]);
+            toBeModified = toBeModified[0][0];
+            if(parseInt(toBeModified.approvedpresentations,10) < parseInt(toBeModified.maxpresentations,10)){
                 await modifyPresentationState(connection,req.body.event,req.body.title, req.body.newstate);
-                const tobesent = await incrementApproved(connection,req.body.event);
-                send(tobesent[0])
+                await incrementApproved(connection,req.body.event);
+                var tobesent = await getPresentation(connection,req.body.event,req.body.title)
+
+                tobesent = JSON.parse(JSON.stringify(tobesent))[0][0];
+                send(tobesent)
+                res.send("presentation approved")
             }else{
                 res.send("this event has had it's maximum number of presentations approved");
             }
