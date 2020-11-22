@@ -5,17 +5,18 @@ import {Presentation} from "./dbcontroller"
 
 export function send(msg:Presentation){
 console.log(msg,"trying to send message")
-connect('amqp://localhost', (error0, rabbitconnection)=>{
+
+return new Promise((resolve,reject)=>{
+  connect('amqp://localhost', (error0, rabbitconnection)=>{
     if(error0){
-        throw error0
+        reject(error0)
     }else{
         console.log("sending")
     }
     rabbitconnection.createChannel((error1,channel)=>{
         if (error1) {
-          throw error1;
+          reject(error1)
         }
-
         const exchange = 'presentation.approved';
 
         channel.assertExchange(exchange,"fanout", {
@@ -23,8 +24,15 @@ connect('amqp://localhost', (error0, rabbitconnection)=>{
         });
         channel.publish(exchange, '', Buffer.from(msg));
         console.log(" [x] Sent %s", msg);
-
+        channel.close((err)=>{
+          if(err){
+            console.log(err);
+            resolve();
+          }
+        })
       });
 })
+})
+
 
 };
