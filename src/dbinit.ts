@@ -81,10 +81,10 @@ async function init(){
         console.log("event table created")
     });
 
-    await storeEvent(connection, "sampleevent", 3);
+    await storeEvent(connection,"id1234", "sampleevent", 3);
     let event = await getEvent(connection,"sampleevent")
     console.log("event gotten",event[0])
-    await changeMax(connection,"sampleevent", 3);
+    await changeMax(connection,"id1234","sampleevent", 3);
     event = await getEvent(connection,"sampleevent")
     console.log("event gotten",event[0])
     await incrementApproved(connection,"sampleevent");
