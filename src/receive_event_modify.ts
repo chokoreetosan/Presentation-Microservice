@@ -31,7 +31,7 @@ connect('amqp://localhost', (error0, connection) =>{
         if(msg.content){
           console.log(" [x] %s", msg.content.toString());
           const msgcontent = JSON.parse(msg.content.toString());
-          changeMax(dbconnection,msgcontent.name, msgcontent.presentation.maxPresentation)
+          changeMax(dbconnection,msgcontent._id,msgcontent.name, msgcontent.presentations.maxPresentations)
         }else{
           console.log("empty modify message")
         }

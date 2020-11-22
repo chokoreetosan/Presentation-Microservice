@@ -35,7 +35,7 @@ connect('amqp://localhost', (error0, connection) =>{
         if(msg.content){
           console.log(" [x] %s", msg.content.toString());
           const msgcontent = JSON.parse(msg.content.toString())
-          storeEvent(dbconnection,msgcontent.name, msgcontent.presentation.maxPresentation);
+          storeEvent(dbconnection,msgcontent._id,msgcontent.name, msgcontent.presentations.maxPresentations);
         }else{
           console.log("create event message empty")
         }
