@@ -11,7 +11,7 @@ return new Promise((resolve,reject)=>{
     if(error0){
         reject(error0)
     }else{
-        console.log("sending")
+        console.log("connected to rabbit to send message")
     }
     rabbitconnection.createChannel((error1,channel)=>{
         if (error1) {
@@ -22,14 +22,14 @@ return new Promise((resolve,reject)=>{
         channel.assertExchange(exchange,"fanout", {
           durable: false
         });
-        channel.publish(exchange, '', Buffer.from(msg));
+        channel.publish(exchange, '', Buffer.from(JSON.stringify(msg)));
         console.log(" [x] Sent %s", msg);
         channel.close((err)=>{
           if(err){
             console.log(err);
-            resolve();
           }
         })
+        resolve();
       });
 })
 })

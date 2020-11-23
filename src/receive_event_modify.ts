@@ -1,48 +1,33 @@
-import {connect, Connection, ConfirmChannel, Channel, credentials}  from  'amqplib/callback_api';
+import {connect, Connection, ConfirmChannel, Channel, credentials}  from  'amqplib';
 import {changeMax} from "./dbcontroller"
 
 
-export function receive_event_modify(dbconnection:any){
-connect('amqp://localhost', (error0, connection) =>{
-  if (error0) {
-    throw error0;
-  }else {
-    console.log("receive event modify connected to server")
-  }
-  connection.createChannel((error1, channel) =>{
-    if (error1) {
-      throw error1;
-    }else{
-      console.log("recieve event modify connected to channel")
-    }
+export async function receive_event_modify(dbconnection:any){
+  return connect("amqp://localhost")
+  .then((connection)=>{
+    return connection.createChannel()
+  })
+  .then( async (channel)=>{
     const exchange = "event.modify"
-
-    channel.assertExchange(exchange, 'fanout', {durable:false});
-
-    channel.assertQueue('', {
+    channel.assertExchange(exchange,'fanout',{durable:false});
+    const q = await channel.assertQueue('',{
       exclusive:true
-    }, (error2,q)=>{
-      if(error2){
-        throw error2;
-      }
-      channel.bindQueue(q.queue,exchange,'');
-
-      channel.consume(q.queue, (msg)=>{
-        if(msg.content){
-          console.log(" [x] %s", msg.content.toString());
-          const msgcontent = JSON.parse(msg.content.toString());
-          changeMax(dbconnection,msgcontent._id,msgcontent.name, msgcontent.presentations.maxPresentations)
-        }else{
-          console.log("empty modify message")
-        }
-      },{
-        noAck:true
-      })
-
     })
+    channel.bindQueue(q.queue,exchange,'');
+    return {channel,q};
+  })
+  .then(({channel,q})=>{
+    channel.consume(q.queue,(msg)=>{
+      if(msg.content){
+          console.log("event modify message sent via rabbit [x] %s", msg.content.toString());
+          const msgcontent = JSON.parse(msg.content.toString())
+          changeMax(dbconnection,msgcontent._id,msgcontent.name, msgcontent.presentations.maxPresentations)
+      }else{
+        console.log("receive event modify message empty")
+      }
+    },{
+      noAck:true
+    })
+  })
+}
 
-
-  });
-})
-
-};
