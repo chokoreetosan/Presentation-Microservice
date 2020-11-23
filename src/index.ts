@@ -16,14 +16,15 @@ import * as bluebird from "bluebird"
 import {createPresentation,state, getAllPresentations, getPresentation, modifyPresentationState, storeEvent,changeMax,incrementApproved,getEvent} from "./dbcontroller"
 
 
-
+const dbHost = process.env.DB_HOST || 'localhost';
 
 // Connects to database
 const connection = createConnection({
-        host: process.env.DB_HOST,
+        host: dbHost,
         user: process.env.DB_USER,
         password: process.env.DB_PASS,
         database:"presentationproposals",
+        port:parseInt(process.env.DB_PORT,10),
         Promise:bluebird
 });
 connection.connect((err)=>{
@@ -33,16 +34,21 @@ connection.connect((err)=>{
         }
         console.log('connected as id ' + connection.threadId);
 });
-
-const receiveCreate = new CircuitBreaker(receive_event_created);
-const receiveModify = new CircuitBreaker(receive_event_modify);
+const options = {
+    timeout: 3000, // If our function takes longer than 3 seconds, trigger a failure
+    errorThresholdPercentage: 50, // When 50% of requests fail, trip the circuit
+    resetTimeout: 30000 // After 30 seconds, try again.
+  };
+const receiveCreate = new CircuitBreaker(receive_event_created,options);
+const receiveModify = new CircuitBreaker(receive_event_modify,options);
 receiveCreate.fallback(()=>{
 console.log("event.create service seems to be down right now'")
 });
 receiveModify.fallback(()=>{
 console.log("event.modify service seems to be down right now")
 });
-
+receiveModify.on('fallback',(result)=>{console.log(result)});
+receiveCreate.on('fallback',(result)=>{console.log(result)});
 receiveCreate.fire(connection);
 receiveModify.fire(connection);
 
