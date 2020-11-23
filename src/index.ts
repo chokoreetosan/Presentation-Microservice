@@ -4,7 +4,6 @@ const port = 8081; // default port to listen
 import {config} from "dotenv";
 import { resolve } from "path";
 config({path:resolve(__dirname,".env")})
-// import {connect, Connection, ConfirmChannel, Channel, credentials}  from  'amqplib/callback_api';
 import {send} from "./send_approvals.js";
 import {receive_event_created} from "./receive_event_created.js"
 import {receive_event_modify} from "./receive_event_modify.js"
@@ -14,9 +13,9 @@ import CircuitBreaker from "opossum";
 import * as dotenv from "dotenv"
 dotenv.config();
 import * as bluebird from "bluebird"
+import {createPresentation,state, getAllPresentations, getPresentation, modifyPresentationState, storeEvent,changeMax,incrementApproved,getEvent} from "./dbcontroller"
 
 
-// starts the rabbitmq channelsinput
 
 
 // Connects to database
@@ -34,11 +33,21 @@ connection.connect((err)=>{
         }
         console.log('connected as id ' + connection.threadId);
 });
-receive_event_modify(connection);
-receive_event_created(connection);
+
+const receiveCreate = new CircuitBreaker(receive_event_created);
+const receiveModify = new CircuitBreaker(receive_event_modify);
+receiveCreate.fallback(()=>{
+console.log("event.create service seems to be down right now'")
+});
+receiveModify.fallback(()=>{
+console.log("event.modify service seems to be down right now")
+});
+
+receiveCreate.fire(connection);
+receiveModify.fire(connection);
+
+
 app.use(express.urlencoded({type:"application/x-www-form-urlencoded"}))
-import {createPresentation,state, getAllPresentations, getPresentation, modifyPresentationState, storeEvent,changeMax,incrementApproved,getEvent} from "./dbcontroller"
-import { strict } from "assert";
 
 // Check the readme for more details on how to use these endpoints.
 
@@ -63,20 +72,25 @@ app.get("/allpresentations",async (req,res)=>{
 
 // This endpoint changes the state of an existing presentation proposal
 app.patch("/presentation",async (req,res)=>{
-
     if(req.body.newstate ==="submitted" || req.body.newstate ==="approved" || req.body.newstate === "not-this-year"){
-        const data = await modifyPresentationState(connection,req.body.event,req.body.title,req.body.newstate)
         if(req.body.newstate === "approved"){
             let toBeModified = await getEvent(connection,req.body.event)
-            console.log("to be modified",toBeModified[0][0]);
             toBeModified = toBeModified[0][0];
             if(parseInt(toBeModified.approvedpresentations,10) < parseInt(toBeModified.maxpresentations,10)){
                 await modifyPresentationState(connection,req.body.event,req.body.title, req.body.newstate);
                 await incrementApproved(connection,req.body.event);
-                var tobesent = await getPresentation(connection,req.body.event,req.body.title)
-
+                let tobesent = await getPresentation(connection,req.body.event,req.body.title)
                 tobesent = JSON.parse(JSON.stringify(tobesent))[0][0];
-                send(tobesent)
+                const breaker = new CircuitBreaker(send,{
+                    timeout:3000,
+                })
+                breaker.fallback(()=>{
+                    console.log("presentations.approvals channel out of service")
+                });
+                breaker.on('fallback',(result)=>{
+                    console.log("should probably record failures in a database")
+                })
+                breaker.fire(tobesent).then(console.log).catch(console.log);
                 res.send("presentation approved")
             }else{
                 res.send("this event has had it's maximum number of presentations approved");
