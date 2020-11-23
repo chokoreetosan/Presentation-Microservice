@@ -5,9 +5,9 @@ import {Presentation} from "./dbcontroller"
 
 export function send(msg:Presentation){
 console.log(msg,"trying to send message")
-
+const mqHost = process.env.RABBITMQ_HOST || 'localhost';
 return new Promise((resolve,reject)=>{
-  connect('amqp://localhost', (error0, rabbitconnection)=>{
+  connect(`amqp://${mqHost}`, (error0, rabbitconnection)=>{
     if(error0){
         reject(error0)
     }else{
