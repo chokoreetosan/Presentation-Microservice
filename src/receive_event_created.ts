@@ -3,8 +3,10 @@ import {storeEvent} from "./dbcontroller";
 import {connect} from 'amqplib';
 import { join } from "bluebird";
 
+const mqHost = process.env.RABBITMQ_HOST || 'localhost';
+
 export async function receive_event_created(dbconnection:any){
-  return connect("amqp://localhost")
+  return connect(`amqp://${mqHost}`)
   .then((connection)=>{
     return connection.createChannel()
   })

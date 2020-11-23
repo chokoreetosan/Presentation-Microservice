@@ -1,9 +1,9 @@
 import {connect, Connection, ConfirmChannel, Channel, credentials}  from  'amqplib';
 import {changeMax} from "./dbcontroller"
 
-
+const mqHost = process.env.RABBITMQ_HOST || 'localhost';
 export async function receive_event_modify(dbconnection:any){
-  return connect("amqp://localhost")
+  return connect(`amqp://${mqHost}`)
   .then((connection)=>{
     return connection.createChannel()
   })
