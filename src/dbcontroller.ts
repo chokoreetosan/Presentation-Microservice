@@ -59,16 +59,16 @@ export async function modifyPresentationState(connection:any,event:string,title:
 }
 
 export async function storeEvent(connection:any,eventId:string, eventname:string, presentationMax:number){
-   return connection.promise().query("INSERT INTO events (eventId, event,maxpresentations,approvedpresentations) VALUES(?,?,?,?)",[eventId,eventname,presentationMax,0])
+   return connection.promise().query("INSERT INTO events (eventId, event,maxpresentations,approvedpresentations) VALUES(?,?,?,?)",[eventId,eventname,presentationMax,0]).catch(console.log)
 }
 
 export async function getEvent(connection:any,eventname:string){
-    return connection.promise().query("SELECT * FROM events where event=?",[eventname]);
+    return connection.promise().query("SELECT * FROM events where event=?",[eventname]).catch(console.log);
 }
 
 export async function changeMax(connection:any,eventId:string, eventname:string,presentationMax:number){
-    return connection.promise().query("UPDATE events SET maxpresentations=? WHERE event=?",[presentationMax,eventname]);
+    return connection.promise().query("UPDATE events SET maxpresentations=? WHERE event=?",[presentationMax,eventname]).catch(console.log);
 }
 export async function incrementApproved(connection:any,eventname:string){
-    return connection.promise().query("UPDATE events SET approvedpresentations = approvedpresentations+1 WHERE event=?",[eventname])
+    return connection.promise().query("UPDATE events SET approvedpresentations = approvedpresentations+1 WHERE event=?",[eventname]).catch(console.log)
 }
