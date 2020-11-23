@@ -5,10 +5,13 @@ import * as dotenv from "dotenv"
 dotenv.config();
 import * as bluebird from "bluebird"
 import {createPresentation,state, getAllPresentations, getPresentation, modifyPresentationState, storeEvent, changeMax, incrementApproved, getEvent} from "./dbcontroller"
+
+const dbHost = process.env.DB_HOST || 'localhost';
+
 async function init(){
     // connects to database
     const connection = await createConnection({
-        host: process.env.DB_HOST,
+        host: dbHost,
         user: process.env.DB_USER,
         password: process.env.DB_PASS,
         database:"mysql",
