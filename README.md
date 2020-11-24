@@ -87,3 +87,22 @@ newstate must have the value "submitted, approved, or not-this-year", or the end
 Content type header must be
 application/x-www-form-urlencoded
 ```
+
+
+### To Deploy:
+
+The Dockerfile needs a variable which is the remote ip of the test database I initialized on RDS. Simply DM me on Slack and I will provide it for you. Specify it as DB_HOST
+
+Then 
+```javascript
+sudo docker build -t presentation microservice .
+```
+
+
+Specify RABBITMQ_HOST with the --env argument to the docker run command.
+
+When running docker run, be sure to map the docker port for the service to the host port, with -p 8081:8081
+Here's an example
+```javascript
+docker run -p 8081:8081 --env "RABBITMQ_HOST=[rabbitmq_service_ip]" presentationmicroservice:latest
+```
